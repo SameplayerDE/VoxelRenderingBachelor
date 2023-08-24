@@ -1,0 +1,15 @@
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\bin\Debug\net6.0\CodeSnipets.exe
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\bin\Debug\net6.0\CodeSnipets.deps.json
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\bin\Debug\net6.0\CodeSnipets.runtimeconfig.json
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\bin\Debug\net6.0\CodeSnipets.dll
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\bin\Debug\net6.0\CodeSnipets.pdb
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\obj\Debug\net6.0\CodeSnipets.csproj.AssemblyReference.cache
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\obj\Debug\net6.0\CodeSnipets.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\obj\Debug\net6.0\CodeSnipets.AssemblyInfoInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\obj\Debug\net6.0\CodeSnipets.AssemblyInfo.cs
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\obj\Debug\net6.0\CodeSnipets.csproj.CoreCompileInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\obj\Debug\net6.0\CodeSnipets.dll
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\obj\Debug\net6.0\refint\CodeSnipets.dll
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\obj\Debug\net6.0\CodeSnipets.pdb
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\obj\Debug\net6.0\CodeSnipets.genruntimeconfig.cache
+C:\Users\asame\source\repos\VoxelRendering\CodeSnipets\obj\Debug\net6.0\ref\CodeSnipets.dll

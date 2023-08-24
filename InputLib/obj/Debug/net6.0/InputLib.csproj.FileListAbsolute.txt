@@ -1,0 +1,12 @@
+C:\Users\asame\source\repos\VoxelRendering\InputLib\bin\Debug\net6.0\InputLib.deps.json
+C:\Users\asame\source\repos\VoxelRendering\InputLib\bin\Debug\net6.0\InputLib.dll
+C:\Users\asame\source\repos\VoxelRendering\InputLib\bin\Debug\net6.0\InputLib.pdb
+C:\Users\asame\source\repos\VoxelRendering\InputLib\obj\Debug\net6.0\InputLib.csproj.AssemblyReference.cache
+C:\Users\asame\source\repos\VoxelRendering\InputLib\obj\Debug\net6.0\InputLib.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\asame\source\repos\VoxelRendering\InputLib\obj\Debug\net6.0\InputLib.AssemblyInfoInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\InputLib\obj\Debug\net6.0\InputLib.AssemblyInfo.cs
+C:\Users\asame\source\repos\VoxelRendering\InputLib\obj\Debug\net6.0\InputLib.csproj.CoreCompileInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\InputLib\obj\Debug\net6.0\InputLib.dll
+C:\Users\asame\source\repos\VoxelRendering\InputLib\obj\Debug\net6.0\refint\InputLib.dll
+C:\Users\asame\source\repos\VoxelRendering\InputLib\obj\Debug\net6.0\InputLib.pdb
+C:\Users\asame\source\repos\VoxelRendering\InputLib\obj\Debug\net6.0\ref\InputLib.dll

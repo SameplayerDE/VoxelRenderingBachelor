@@ -356,7 +356,6 @@ void CS(uint3 localID : SV_GroupThreadID, uint3 groupID : SV_GroupID, uint  loca
     deltaDist = float3(abs(deltaDist.x), abs(deltaDist.y), abs(deltaDist.z));
 
 
-
     float deltaDistX = deltaDist.x;
     float deltaDistY = deltaDist.y;
     float deltaDistZ = deltaDist.z;
@@ -376,7 +375,8 @@ void CS(uint3 localID : SV_GroupThreadID, uint3 groupID : SV_GroupID, uint  loca
 
 
     int distance = 0;
-    int maxDistance = 100;
+    int maxDistance = 512;
+    int minDistance = 32;
     int hit = 0;
     int side = 0;
     int id = 0;
@@ -422,11 +422,17 @@ void CS(uint3 localID : SV_GroupThreadID, uint3 groupID : SV_GroupID, uint  loca
 
         if (getSolid(mapX, mapY, mapZ) != 0)
         {
+            //if (getSolid(mapX, mapY, mapZ) != 1) {
+            //    id = getSolid(mapX, mapY, mapZ);
             hit = 1;
+            //}
+            
+            //id++;
             id = getSolid(mapX, mapY, mapZ);
         }
         distance++;
     }
+
 
     if (side == 0)
     {
@@ -455,16 +461,25 @@ void CS(uint3 localID : SV_GroupThreadID, uint3 groupID : SV_GroupID, uint  loca
 
     Results[globalID.x] = result;
 
-    float4 c;
+    float4 c = float4(0, 0, 0, 0);
     switch (result.Id)
     {
-    case 1: c = float4(1, 0, 0, 1); break; //red
-    case 2: c = float4(0, 1, 0, 1); break; //green
-    case 3: c = float4(0, 0, 1, 1); break; //blue
-    case 4: c = float4(1, 1, 1, 1); break; //white
-    default: c = float4(1, 0, 1, 1); break; //yellow
+        case 1: c = float4(1, 0, 0, 1); break; //red
+        case 2: c = float4(0, 1, 0, 1); break; //green
+        case 3: c = float4(0, 0, 1, 1); break; //blue
+        case 4: c = float4(1, 1, 1, 1); break; //white
+        default: c = float4(1, 1, 1, 1); break; //yellow
     }
-
+    //c = saturate(rayLength) * c;
+    //c = (result.Id / 64.0f);
+    //c /= saturate((result.Id / 64.0f));
+    //c *= 1 - (rayLength / 64.0f);
+    //while (id > 0) {
+    //    c += float4(0.01f, 0.01f, 0.01f, 1);
+    //    id--;
+    //}
+    //c = float4(1, 1, 1, 1);
+    //c = c / float4(1 - (rayLength / 128.0f), 1 - (rayLength / 128.0f), 1 - (rayLength / 128.0f), 1);
     int tX = 0;
     int tY = 0;
 
@@ -491,59 +506,60 @@ void CS(uint3 localID : SV_GroupThreadID, uint3 groupID : SV_GroupID, uint  loca
 
     uint2 idL = uint2(x, Height - y);
 
-    if (result.Hit == 1)
+    if (result.Hit == 1 || result.Id != 0)
     {
-        c = Input[uint3(tX, tY, result.Id - 1)];
+        //c = Input[uint3(tX, tY, result.Id - 1)];
+        //c = Input[uint3(tX, tY, result.Id - 1)];
 
-        float3 normal;
+       //float3 normal;
+       //
+       //if (result.Side == 0) {
+       //    if (result.SideOrientation == 0) {
+       //        normal = float3(1, 0, 0);
+       //    }
+       //    if (result.SideOrientation == 1) {
+       //        normal = float3(-1, 0, 0);
+       //    }
+       //}
+       //if (result.Side == 1) {
+       //    if (result.SideOrientation == 0) {
+       //        normal = float3(0, 1, 0);
+       //    }
+       //    if (result.SideOrientation == 1) {
+       //        normal = float3(0, -1, 0);
+       //    }
+       //}
+       //if (result.Side == 2) {
+       //    if (result.SideOrientation == 0) {
+       //        normal = float3(0, 0, 1);
+       //    }
+       //    if (result.SideOrientation == 1) {
+       //        normal = float3(0, 0, -1);
+       //    }
+       //}
 
-        if (result.Side == 0) {
-            if (result.SideOrientation == 0) {
-                normal = float3(1, 0, 0);
-            }
-            if (result.SideOrientation == 1) {
-                normal = float3(-1, 0, 0);
-            }
-        }
-        if (result.Side == 1) {
-            if (result.SideOrientation == 0) {
-                normal = float3(0, 1, 0);
-            }
-            if (result.SideOrientation == 1) {
-                normal = float3(0, -1, 0);
-            }
-        }
-        if (result.Side == 2) {
-            if (result.SideOrientation == 0) {
-                normal = float3(0, 0, 1);
-            }
-            if (result.SideOrientation == 1) {
-                normal = float3(0, 0, -1);
-            }
-        }
 
-
-        float3 totalLight = float3(0, 0, 0);
-        totalLight += AmbientLightColor;
-
-        float3 lightDir = normalize(LightPosition - result.To);
-        float diffuse = saturate(dot(lightDir, normal));
-      
-        if (isBlocked(result.To, LightPosition) == 1) {
-            diffuse = saturate(dot(-normal, normal));
-        }
-        
-        totalLight += diffuse * LightColor;
-
-        float3 output = saturate(totalLight) * c;
-        float fog = clamp((result.Length - FogStart) / (FogEnd - FogStart), 0, 1);
-        Output[idL] = float4(lerp(output, FogColor, fog), 1);
+        //float3 totalLight = float3(0, 0, 0);
+        //totalLight += AmbientLightColor;
+        //
+        //float3 lightDir = normalize(LightPosition - result.To);
+        //float diffuse = saturate(dot(lightDir, normal));
+        //
+        //if (isBlocked(result.To, LightPosition) == 1) {
+        //    diffuse = saturate(dot(-normal, normal));
+        //}
+        //
+        //totalLight += diffuse * LightColor;
+        //
+        //float3 output = saturate(totalLight) * c;
+        //float fog = clamp((result.Length - FogStart) / (FogEnd - FogStart), 0, 1);
+        Output[idL] = c;
 
 
     }
     else
     {
-        Output[idL] = float4(FogColor, 1);
+        Output[idL] = float4(0, 0, 0, 1);
     }
 
 }

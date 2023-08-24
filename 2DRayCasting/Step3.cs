@@ -141,7 +141,7 @@ namespace RayCasting
             }
 
             int distance = 0;
-            int maxDistance = 10;
+            int maxDistance = 1;
             _hit = false;
 
             while (!_hit && distance < maxDistance)

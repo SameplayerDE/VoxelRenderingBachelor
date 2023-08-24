@@ -1,0 +1,15 @@
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\bin\Debug\net6.0\RenderLib.deps.json
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\bin\Debug\net6.0\RenderLib.dll
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\bin\Debug\net6.0\RenderLib.pdb
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\obj\Debug\net6.0\RenderLib.csproj.AssemblyReference.cache
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\obj\Debug\net6.0\RenderLib.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\obj\Debug\net6.0\RenderLib.AssemblyInfoInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\obj\Debug\net6.0\RenderLib.AssemblyInfo.cs
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\obj\Debug\net6.0\RenderLib.csproj.CoreCompileInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\obj\Debug\net6.0\RenderLib.dll
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\obj\Debug\net6.0\refint\RenderLib.dll
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\obj\Debug\net6.0\RenderLib.pdb
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\obj\Debug\net6.0\ref\RenderLib.dll
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\bin\Debug\net6.0\OptiLib.dll
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\bin\Debug\net6.0\OptiLib.pdb
+C:\Users\asame\source\repos\VoxelRendering\RenderLib\obj\Debug\net6.0\RenderLib.csproj.CopyComplete

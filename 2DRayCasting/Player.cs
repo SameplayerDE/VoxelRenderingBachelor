@@ -12,7 +12,7 @@ namespace RayCasting
         public float Rotation; //Radiant
 
         private const float _rotationSpeed = MathHelper.Pi;
-        private const float _movementSpeed = 5f;
+        public float _movementSpeed = 5f;
 
         public void Update(GameTime gameTime)
         {

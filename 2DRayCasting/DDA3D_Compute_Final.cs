@@ -1,6 +1,7 @@
 ﻿using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
 using Microsoft.Xna.Framework.Input;
+using System;
 
 namespace RayCasting
 {
@@ -23,26 +24,30 @@ namespace RayCasting
         const int ComputeGroupSize = 64;
         private StructuredBuffer _rayResultBuffer;
         private StructuredBuffer _shaderMap;
+        private StructuredBuffer _shaderMapC;
         private int _maxCount = 1_000_000;
-        private int[] _sahderMap = new int[2304];
 
         private RenderTarget2D _virtualScreen;
         private const int _virtualResolutionX = 240;
         private const int _virtualResolutionY = 240;
 
         private RenderTarget2D _rayCastTarget;
-        private const int _rayCastTargetResolutionX = 1920 / 10;
-        private const int _rayCastTargetResolutionY = 1080 / 10;
+        private const int _rayCastTargetResolutionX = 1920 / 2;
+        private const int _rayCastTargetResolutionY = 1080 / 2;
 
-        private const int _mapX = 24;
-        private const int _mapY = 6;
-        private const int _mapZ = 24;
+        private const int _mapX = 256;
+        private const int _mapY = 256;        
+        private const int _mapZ = 256;
 
         private int[,,] _map;
+        private int[] _map1D;
+        private float[] _map1DC;
 
         private Matrix _world;
         private Matrix _view;
         private Matrix _projection;
+
+        private int _selection = 1;
 
         private Texture2D[] _textures;
 
@@ -50,12 +55,13 @@ namespace RayCasting
         private VertexBuffer _vertexBuffer;
 
         //Player
-        private Vector3 _position = new Vector3(2, 1.5f, 2);
-        private Vector3 _rayPosition = new Vector3(2, 1.5f, 2);
-        private Vector3 _rotation;
+        //private Vector3 _position = new Vector3(-50, 250, -50);
+        private Vector3 _position = new Vector3(-32, 128, -32);
+        private Vector3 _rayPosition = new Vector3(0, 0f, 0);
+        private Vector3 _rotation = new Vector3(MathHelper.ToRadians(15), MathHelper.ToRadians(45), 0);
         private Vector3 _rayRotation;
         private Vector3 _direction;
-        private float _movementSpeed = 5.0f;
+        private float _movementSpeed = 32.0f;
 
         private float _xxx = 1.0f;
         private float _fov = 90;
@@ -65,6 +71,9 @@ namespace RayCasting
 
         private KeyboardState _prevState;
         private KeyboardState _currState;
+
+        private MouseState _prevMouseState;
+        private MouseState _currMouseState;
 
         private bool _centerMouse = false;
 
@@ -81,24 +90,26 @@ namespace RayCasting
 
         protected override void Initialize()
         {
-            IsFixedTimeStep = true;
+            IsFixedTimeStep = false;
+            _graphics.SynchronizeWithVerticalRetrace= false;
             TargetElapsedTime = TimeSpan.FromMilliseconds(16);
 
             _graphics.ApplyChanges();
             
-            _textures = new Texture2D[5];
-            _textures[0] = Content.Load<Texture2D>("cobblestone");
-            _textures[1] = Content.Load<Texture2D>("dirt");
+            _textures = new Texture2D[7];
+            _textures[0] = Content.Load<Texture2D>("dirt");
+            _textures[1] = Content.Load<Texture2D>("oak_log");
             _textures[2] = Content.Load<Texture2D>("oak_planks");
             _textures[3] = Content.Load<Texture2D>("iron_block");
             _textures[4] = Content.Load<Texture2D>("gold_block");
+            _textures[5] = Content.Load<Texture2D>("oak_log_top");
+            _textures[6] = Content.Load<Texture2D>("cobblestone");
 
             _computeTexture = new Texture2D(GraphicsDevice, _rayCastTargetResolutionX, _rayCastTargetResolutionY, false, SurfaceFormat.Color, ShaderAccess.ReadWrite);
-            _textureAtlas = new Texture3D(GraphicsDevice, 16, 16, 5, false, SurfaceFormat.Color, ShaderAccess.ReadWrite);
+            _textureAtlas = new Texture3D(GraphicsDevice, 16, 16, 7, false, SurfaceFormat.Color, ShaderAccess.ReadWrite);
             
             _virtualScreen = new RenderTarget2D(GraphicsDevice, _virtualResolutionX, _virtualResolutionY, false, GraphicsDevice.PresentationParameters.BackBufferFormat, DepthFormat.Depth24);
             _rayCastTarget = new RenderTarget2D(GraphicsDevice, _rayCastTargetResolutionX, _rayCastTargetResolutionY, false, GraphicsDevice.PresentationParameters.BackBufferFormat, DepthFormat.Depth24);
-
 
             _spriteBatch = new SpriteBatch(GraphicsDevice);
             _font = Content.Load<SpriteFont>("Font");
@@ -107,174 +118,124 @@ namespace RayCasting
             _computeShader = Content.Load<Effect>("Ray3D");
             var texture = Content.Load<Texture2D>("dirt");
 
-            _computeShader.Parameters["Input"].SetValue(texture);
+            //_computeShader.Parameters["Input"].SetValue(texture);
             _computeShader.Parameters["InputW"].SetValue(texture.Width);
             _computeShader.Parameters["InputH"].SetValue(texture.Height);
 
             _pixel = new Texture2D(GraphicsDevice, 1, 1);
             _pixel.SetData(new Color[] { Color.White });
 
-            _map = new int[_mapY, _mapZ, _mapX] // y, z, x
-            {
-                {
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,2,3,1,2,3,2,3,2,1,2,3,2,1,2,3,1,2,1,1 },
-                    { 1,1,1,1,1,2,3,1,2,3,2,3,2,1,2,3,2,1,2,3,1,2,1,1 },
-                    { 1,1,1,1,1,2,3,1,2,3,2,3,2,1,2,3,2,1,2,3,1,2,1,1 },
-                    { 1,1,1,1,1,2,3,1,2,3,2,3,2,1,2,3,2,1,2,3,1,2,1,1 },
-                    { 1,1,1,1,1,2,3,1,2,3,2,3,2,1,2,3,2,1,2,3,1,2,1,1 },
-                    { 1,1,1,1,1,2,3,1,2,3,2,3,2,1,2,3,2,1,2,3,1,2,1,1 },
-                    { 1,1,1,1,1,2,3,1,2,3,2,3,2,1,2,3,2,1,2,3,1,2,1,1 },
-                    { 1,1,1,1,1,2,3,1,2,3,2,3,2,1,2,3,2,1,2,3,1,2,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
-                },
-                {
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,2,0,0,0,0,0,0,0,0,3,0,3,0,3,0,0,0,1 },
-                    { 1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,3,0,0,0,3,0,0,0,1 },
-                    { 1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,2,2,0,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,1 },
-                    { 1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
-                    { 1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
-                    { 1,4,0,0,0,0,5,0,4,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
-                    { 1,4,0,4,0,0,0,0,4,0,0,0,0,2,2,2,0,0,0,0,0,0,0,1 },
-                    { 1,4,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
-                },
-                {
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,2,2,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,0,0,0,3,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,2,0,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
-                    { 1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
-                    { 1,4,0,0,0,0,5,0,4,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
-                    { 1,4,0,4,0,0,0,0,4,0,0,0,0,2,2,2,0,0,0,0,0,0,0,1 },
-                    { 1,4,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
-                },
-                {
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,1,2,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,1,2,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,2,2,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
-                },
-                {
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
-                },
-                {
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
-                    { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
-                },
-            };
+            _map = new int[_mapY, _mapZ, _mapX]; // y, z, x
+            //{
+            //    {
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1 },
+            //        { 1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1 },
+            //        { 1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1 },
+            //        { 1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1 },
+            //        { 1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1 },
+            //        { 1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1 },
+            //        { 1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1 },
+            //        { 1,1,1,1,1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
+            //    },
+            //    {
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,2,2,2,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1 },
+            //        { 1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,3,0,0,0,3,0,0,0,1 },
+            //        { 1,0,0,0,0,0,2,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,2,2,0,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,1 },
+            //        { 1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
+            //        { 1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
+            //        { 1,4,0,0,0,0,5,0,4,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
+            //        { 1,4,0,4,0,0,0,0,4,0,0,0,0,2,2,2,0,0,0,0,0,0,0,1 },
+            //        { 1,4,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
+            //    },
+            //    {
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,2,2,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,2,0,0,0,0,3,0,0,0,3,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,2,0,2,2,0,0,0,0,3,0,3,0,3,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,2,2,0,0,0,0,0,1 },
+            //        { 1,0,0,0,0,0,0,0,0,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
+            //        { 1,4,0,4,0,0,0,0,4,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
+            //        { 1,4,0,0,0,0,5,0,4,0,0,0,0,0,0,2,0,0,0,0,0,0,0,1 },
+            //        { 1,4,0,4,0,0,0,0,4,0,0,0,0,2,2,2,0,0,0,0,0,0,0,1 },
+            //        { 1,4,0,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,4,4,4,4,4,4,4,4,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
+            //    },
+            //    {
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
+            //        { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 }
+            //    },
+            //};
 
-            
+
+
+            // Do something with this data...
 
             VertexPositionColor[] vertices = new VertexPositionColor[6 * 6];
 
@@ -339,24 +300,85 @@ namespace RayCasting
             _shaderMap = new StructuredBuffer(GraphicsDevice, typeof(int), _mapX * _mapY * _mapZ, BufferUsage.None, ShaderAccess.ReadWrite);
 
             Random rand = new Random();
-            int[] tempMap = new int[_mapX * _mapZ * _mapY];
+            _map1D = new int[_mapX * _mapZ * _mapY];
+            // Create and configure FastNoise object
+            FastNoiseLite noise = new FastNoiseLite();
+            noise.SetSeed(101199);
+            noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+
+            //float scale = 1f;
+            //
+            //for (int y = 0; y < _mapY; y++)
+            //{
+            //    for (int z = 0; z < _mapZ; z++)
+            //    {
+            //        for (int x = 0; x < _mapX; x++)
+            //        {
+            //
+            //            //int id = _map[y, z, x];
+            //            float nValue = noise.GetNoise(x * scale, z * scale) + 1;
+            //            //nValue *= 30;
+            //            //nValue += 10;
+            //            //nValue = Math.Clamp(nValue, 0, _mapY);
+            //            //
+            //            //for (int y = 0; y < nValue; y++)
+            //            //{
+            //            //    int index = x + _mapX * z + _mapX * _mapZ * y;
+            //            //    _map1D[index] = (int)nValue;
+            //            //    _map[y, z, x] = (int)nValue;
+            //            //}
+            //            int index = x + _mapX * z + _mapX * _mapZ * y;
+            //            _map1D[index] = id;
+            //            //int index = x + _mapX * z + _mapX * _mapZ * y;
+            //            //id = _map[y, z, x];
+            //            //id = (int)nValue;
+            //            //_map1D[index] = id > 0 ? 1 : 0;
+            //        }
+            //    }
+            //}
+
+            float scale = 1f;
+
             for (int y = 0; y < _mapY; y++)
             {
                 for (int z = 0; z < _mapZ; z++)
                 {
                     for (int x = 0; x < _mapX; x++)
                     {
-                        int id = rand.Next(0, 4);
-                        id = _map[y, z, x];
+
+                        //int id = _map[y, z, x];
+                        float nValue = Math.Max(noise.GetNoise(x * scale, y * scale, z * scale), 0);
+                        //nValue *= 30;
+                        //nValue += 10;
+                        //nValue = Math.Clamp(nValue, 0, _mapY);
+                        //
+                        if (nValue > 0f)
+                        {
+                            //_map[y, z, x] = (int)Math.Abs(Math.Abs(x - 128)) + (int)Math.Abs(Math.Abs(z - 128));
+                            //_map[y, z, x] = y;
+                            _map[y, z, x] = rand.Next(1, 5);
+                        }
+                        int id = _map[y, z, x];
                         int index = x + _mapX * z + _mapX * _mapZ * y;
-                        tempMap[index] = id;
-                        _map[y, z, x] = id;
+                        _map1D[index] = id;
+                        //for (int yx = 0; yx < nValue; yx++)
+                        //{
+                        //    int index = x + _mapX * z + _mapX * _mapZ * y;
+                        //    _map1D[index] = (int)nValue;
+                        //   _map[y, z, x] = (int)nValue;
+                        //}
+
+                        //int index = x + _mapX * z + _mapX * _mapZ * y;
+
+                        //id = (int)nValue;
+                        //_map1D[index] = id > 0 ? 1 : 0;
                     }
                 }
             }
 
-            Color[] atlas = new Color[16 * 16 * 5];
-            for (int i = 0; i < 5; i++)
+
+            Color[] atlas = new Color[16 * 16 * 7];
+            for (int i = 0; i < 7; i++)
             {
                 Color[] copy = new Color[16 * 16];
                 _textures[i].GetData(copy);
@@ -375,10 +397,10 @@ namespace RayCasting
             _computeShader.Parameters["MapMaxY"].SetValue(_mapY);
             _computeShader.Parameters["MapMaxZ"].SetValue(_mapZ);
 
-            _shaderMap.SetData(tempMap);
             _textureAtlas.SetData(atlas);
+            _shaderMap.SetData(_map1D);
 
-            _computeShader.Parameters["Input"].SetValue(_textureAtlas);
+            //_computeShader.Parameters["Input"].SetValue(_textureAtlas);
 
             _computeShader.Parameters["InputW"].SetValue(_textureAtlas.Width);
             _computeShader.Parameters["InputH"].SetValue(_textureAtlas.Height);
@@ -395,8 +417,56 @@ namespace RayCasting
 
             var delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
 
+            //Random rand = new Random();
+            //// Create and configure FastNoise object
+            //FastNoiseLite noise = new FastNoiseLite();
+            //noise.SetSeed(101199);
+            //noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+            //
+            //for (int y = 0; y < _mapY; y++)
+            //{
+            //    for (int z = 0; z < _mapZ; z++)
+            //    {
+            //        for (int x = 0; x < _mapX; x++)
+            //        {
+            //
+            //            //int id = _map[y, z, x];
+            //            float nValue = Math.Max(noise.GetNoise(x + (float)gameTime.TotalGameTime.TotalSeconds, y + (float)gameTime.TotalGameTime.TotalSeconds, z + (float)gameTime.TotalGameTime.TotalSeconds), 0);
+            //            //nValue *= 30;
+            //            //nValue += 10;
+            //            //nValue = Math.Clamp(nValue, 0, _mapY);
+            //            //
+            //            int index = x + _mapX * z + _mapX * _mapZ * y;
+            //            if (nValue > 0f)
+            //            {   
+            //                _map1D[index] = 1;
+            //            }
+            //            else
+            //            {
+            //                _map1D[index] = 0;
+            //            }
+            //
+            //            //for (int yx = 0; yx < nValue; yx++)
+            //            //{
+            //            //    int index = x + _mapX * z + _mapX * _mapZ * y;
+            //            //    _map1D[index] = (int)nValue;
+            //            //   _map[y, z, x] = (int)nValue;
+            //            //}
+            //
+            //            //int index = x + _mapX * z + _mapX * _mapZ * y;
+            //
+            //            //id = (int)nValue;
+            //            //_map1D[index] = id > 0 ? 1 : 0;
+            //        }
+            //    }
+            //}
+            //_shaderMap.SetData(_map1D);
+
             _prevState = _currState;
             _currState = Keyboard.GetState();
+
+            _prevMouseState = _currMouseState;
+            _currMouseState = Mouse.GetState();
 
             var keyboard = _currState;
 
@@ -417,8 +487,8 @@ namespace RayCasting
                     //mouseDelta.Normalize();
                 }
 
-                _rotation.Y -= mouseDelta.X * delta;
-                _rotation.X += mouseDelta.Y * delta;
+                //_rotation.Y -= mouseDelta.X * delta;
+                //_rotation.X += mouseDelta.Y * delta;
 
                 /*int rotationYKeys = (keyboard.IsKeyDown(Keys.Left) ? -1 : 0) + (keyboard.IsKeyDown(Keys.Right) ? 1 : 0);
                 int rotationXKeys = (keyboard.IsKeyDown(Keys.Down) ? -1 : 0) + (keyboard.IsKeyDown(Keys.Up) ? 1 : 0);
@@ -426,18 +496,35 @@ namespace RayCasting
                 _rotation.Y -= MathHelper.ToRadians(90f) * delta * rotationYKeys;
                 _rotation.X -= MathHelper.ToRadians(90f) * delta * rotationXKeys;*/
 
-                if (_rotation.Y < 0)
-                {
-                    _rotation.Y += MathHelper.TwoPi;
-                }
-                else if (_rotation.Y >= MathHelper.TwoPi)
-                {
-                    _rotation.Y -= MathHelper.TwoPi;
-                }
-
-                _rotation.X = Math.Clamp(_rotation.X, MathHelper.ToRadians(-80f), MathHelper.ToRadians(80f));
+                //if (_rotation.Y < 0)
+                //{
+                //    _rotation.Y += MathHelper.TwoPi;
+                //}
+                //else if (_rotation.Y >= MathHelper.TwoPi)
+                //{
+                //    _rotation.Y -= MathHelper.TwoPi;
+                //}
+                //
+                //_rotation.X = Math.Clamp(_rotation.X, MathHelper.ToRadians(-89f), MathHelper.ToRadians(89f));
 
                 Mouse.SetPosition(screenCenter.X, screenCenter.Y);
+
+                if (_currState.IsKeyDown(Keys.Left))
+                {
+                    _rotation.Y += MathHelper.ToRadians(45f) * delta;
+                }
+                if (_currState.IsKeyDown(Keys.Right))
+                {
+                    _rotation.Y -= MathHelper.ToRadians(45f) * delta;
+                }
+                if (_currState.IsKeyDown(Keys.Up))
+                {
+                    _rotation.X -= MathHelper.ToRadians(45f) * delta;
+                }
+                if (_currState.IsKeyDown(Keys.Down))
+                {
+                    _rotation.X += MathHelper.ToRadians(45f) * delta;
+                }
             }
 
             if (_currState.IsKeyDown(Keys.E) && _prevState.IsKeyUp(Keys.E))
@@ -445,14 +532,81 @@ namespace RayCasting
                 _centerMouse = !_centerMouse;
             }
 
-            if (_currState.IsKeyDown(Keys.T) && _prevState.IsKeyUp(Keys.T))
+            if (_currMouseState.LeftButton == ButtonState.Pressed && _prevMouseState.LeftButton == ButtonState.Released)
             {
-                _computeShader.Parameters["LightPosition"].SetValue(_position);
+                var ray = DDACalculator.RunIteration3D(IsSolid, GetSolid, _rayPosition.X, _rayPosition.Y, _rayPosition.Z, _rayRotation.X, _rayRotation.Y, _rayRotation.Z, 0, 0, 0);
+                if (ray.Hit == 1)
+                {
+                    
+                    BreakBlock((int)ray.MapPosition.X, (int)ray.MapPosition.Y, (int)ray.MapPosition.Z);
+                }
+               
+                
+            }
+            //_computeShader.Parameters["LightPosition"].SetValue(_position);
+            if (_prevMouseState.ScrollWheelValue < _currMouseState.ScrollWheelValue)
+            {
+                _selection += 1;
             }
 
-            if (keyboard.IsKeyDown(Keys.R))
+            if (_prevMouseState.ScrollWheelValue > _currMouseState.ScrollWheelValue)
             {
-                _rotation.X = 0;
+                _selection -= 1;
+            }
+
+            _selection = Math.Clamp(_selection, 1, 7);
+
+            //_computeShader.Parameters["LightPosition"].SetValue(_position);
+
+            if (_currMouseState.RightButton == ButtonState.Pressed && _prevMouseState.RightButton == ButtonState.Released)
+            {
+                var ray = DDACalculator.RunIteration3D(IsSolid, GetSolid, _rayPosition.X, _rayPosition.Y, _rayPosition.Z, _rayRotation.X, _rayRotation.Y, _rayRotation.Z, 0, 0, 0);
+                if (ray.Hit == 1)
+                {
+                    int x = 0;
+                    int y = 0;
+                    int z = 0;
+
+                    if (ray.Side == (int)Side.X)
+                    {
+                        if (ray.SideOrientation == (int)SideOrientation.Positiv)
+                        {
+                            x += 1;
+                        }
+                        if (ray.SideOrientation == (int)SideOrientation.Negativ)
+                        {
+                            x -= 1;
+                        }
+                    }
+
+                    if (ray.Side == (int)Side.Z)
+                    {
+                        if (ray.SideOrientation == (int)SideOrientation.Positiv)
+                        {
+                            z += 1;
+                        }
+                        if (ray.SideOrientation == (int)SideOrientation.Negativ)
+                        {
+                            z -= 1;
+                        }
+                    }
+
+                    if (ray.Side == (int)Side.Y)
+                    {
+                        if (ray.SideOrientation == (int)SideOrientation.Positiv)
+                        {
+                            y += 1;
+                        }
+                        if (ray.SideOrientation == (int)SideOrientation.Negativ)
+                        {
+                            y -= 1;
+                        }
+                    }
+
+                    PlaceBlock((int)ray.MapPosition.X + x, (int)ray.MapPosition.Y + y, (int)ray.MapPosition.Z + z, _selection);
+                }
+
+                //_computeShader.Parameters["LightPosition"].SetValue(_position);
             }
 
             _computeShader.Parameters["RotationMatrix"].SetValue(Matrix.CreateRotationX(_rotation.X) * Matrix.CreateRotationY(_rotation.Y) * Matrix.CreateRotationZ(_rotation.Z));
@@ -519,6 +673,7 @@ namespace RayCasting
                     {
                         _position = new Vector3(_position.X, _position.Y, next.Z);
                     }
+                    
                 }
             }
 
@@ -531,8 +686,6 @@ namespace RayCasting
                 _rayPosition = _position;
                 _rayRotation = _rotation;
 
-
-
                 _computeShader.Parameters["iTime"].SetValue((float)gameTime.TotalGameTime.TotalSeconds);
                 ComputeRays();
 
@@ -542,7 +695,7 @@ namespace RayCasting
                 //_results.Clear();
                 //_results.AddRange(results);
                 //
-                //_requestRender = true;
+                _requestRender = true;
             }
 
             base.Update(gameTime);
@@ -557,7 +710,7 @@ namespace RayCasting
             _spriteBatch.Draw(_computeTexture, Vector2.Zero, Color.White);
             _spriteBatch.End();
 
-            //GraphicsDevice.SetRenderTarget(_virtualScreen);
+            //GraphicsDevice.SetRenderTarget(_rayCastTarget);
             //GraphicsDevice.Clear(Color.White);
             //
             //for (int y = 0; y < _map.GetLength(0); y++)
@@ -581,17 +734,29 @@ namespace RayCasting
             //}
 
             GraphicsDevice.SetRenderTarget(null);
-            GraphicsDevice.Clear(Color.Black);
+            GraphicsDevice.Clear(Color.White);
 
             _spriteBatch.Begin(depthStencilState: DepthStencilState.Default, samplerState: SamplerState.PointWrap);
 
             //_spriteBatch.Draw(_virtualScreen, GraphicsDevice.Viewport.Bounds, Color.White);
             //_spriteBatch.Draw(_rayCastTarget, new Rectangle(0, 0, 256, 256), Color.White);
             _spriteBatch.Draw(_rayCastTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+            //_spriteBatch.Draw(_textures[_selection - 1], new Rectangle(0, 0, 64, 64), Color.White);
+
+            //_spriteBatch.DrawString(_font, _selection + "", Vector2.Zero, Color.White);
 
             _spriteBatch.End();
 
-            base.Draw(gameTime);
+
+            if (Keyboard.GetState().IsKeyDown(Keys.Space))
+            {
+                Stream stream = File.Create("image_" + DateTime.Now.ToString("yyyy-dd-M--HH-mm-ss") + ".png");
+                _rayCastTarget.SaveAsPng(stream, _rayCastTarget.Width, _rayCastTarget.Height);
+                stream.Dispose();
+                _rayCastTarget.Dispose();
+                Exit();
+            }
+                base.Draw(gameTime);
         }
 
         private int GetSolid(float x, float y, float z)
@@ -602,19 +767,20 @@ namespace RayCasting
             int gridZ = (int)map.Z;
 
 
-            if (gridY >= _map.GetLength(0) || gridY < 0)
+            if (gridY >= _mapY || gridY < 0)
             {
                 return 0;
             }
-            if (gridZ >= _map.GetLength(1) || gridZ < 0)
+            if (gridZ >= _mapZ || gridZ < 0)
             {
                 return 0;
             }
-            if (gridX >= _map.GetLength(2) || gridX < 0)
+            if (gridX >= _mapX || gridX < 0)
             {
                 return 0;
             }
-
+            int index = gridX + _mapX * gridZ + _mapX * _mapZ * gridY;
+            return _map1D[index];
             return _map[gridY, gridZ, gridX];
         }
 
@@ -648,11 +814,13 @@ namespace RayCasting
 
         private bool IsSolid(float x, float y, float z)
         {
+
             var map = ToGrid(x, y, z);
             int gridX = (int)map.X;
             int gridY = (int)map.Y;
             int gridZ = (int)map.Z;
-            
+
+
             if (gridY >= _mapY || gridY < 0)
             {
                 return false;
@@ -665,8 +833,8 @@ namespace RayCasting
             {
                 return false;
             }
-            bool solid = _map[gridY, gridZ, gridX] != 0;
-            return solid;
+            int index = gridX + _mapX * gridZ + _mapX * _mapZ * gridY;
+            return _map1D[index] != 0;
         }
 
         private bool IsSolid(Vector3 position)
@@ -709,6 +877,20 @@ namespace RayCasting
             }
         }
 
+        private void BreakBlock(int x, int y, int z)
+        {
+            int index = x + _mapX * z + _mapX * _mapZ * y;
+            _map1D[index] = 0;
+            _shaderMap.SetData(_map1D);
+        }
+
+        private void PlaceBlock(int x, int y, int z, int id)
+        {
+            int index = x + _mapX * z + _mapX * _mapZ * y;
+            _map1D[index] = id;
+            _shaderMap.SetData(_map1D);
+        }
+
         private void ComputeRays()
         {
 
@@ -721,7 +903,7 @@ namespace RayCasting
             _computeShader.Parameters["Output"].SetValue(_computeTexture);
             _computeShader.Parameters["Width"].SetValue(_rayCastTargetResolutionX);
             _computeShader.Parameters["Height"].SetValue(_rayCastTargetResolutionY);
-
+            
             _computeShader.Parameters["Results"].SetValue(_rayResultBuffer);
             _computeShader.Parameters["CPUMap"].SetValue(_shaderMap);
 

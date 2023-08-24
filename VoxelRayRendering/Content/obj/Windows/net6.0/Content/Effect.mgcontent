@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PipelineBuildEvent xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:xsd="http://www.w3.org/2001/XMLSchema">
+  <SourceFile>C:/Users/asame/source/repos/VoxelRendering/VoxelRayRendering/Content/Effect.fx</SourceFile>
+  <SourceTime>2022-12-08T20:50:33.7195608+01:00</SourceTime>
+  <DestFile>C:/Users/asame/source/repos/VoxelRendering/VoxelRayRendering/Content/bin/Windows/Content/Effect.xnb</DestFile>
+  <DestTime>2022-12-22T15:57:28.4296524+01:00</DestTime>
+  <Importer>EffectImporter</Importer>
+  <ImporterTime>2022-10-13T09:30:20+02:00</ImporterTime>
+  <Processor>EffectProcessor</Processor>
+  <ProcessorTime>2022-10-13T09:30:20+02:00</ProcessorTime>
+  <Parameters>
+    <Key>DebugMode</Key>
+    <Value>Auto</Value>
+  </Parameters>
+  <Dependencies />
+  <BuildAsset />
+  <BuildOutput />
+</PipelineBuildEvent>

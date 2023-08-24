@@ -31,7 +31,8 @@ namespace RayCasting
         const int ResolutionX = 720;
         const int ResolutionY = 720;
         private float _fov = 70;
-        private int _rayResolution = ResolutionX / 100;
+        private float _scale = 1f;
+        private int _rayResolution = 10;
         private bool _fishEye = true;
 
         public Step4()
@@ -131,6 +132,17 @@ namespace RayCasting
 
             _rayResolution = Math.Clamp(_rayResolution, 1, GraphicsDevice.Viewport.Width);
 
+            if (Keyboard.GetState().IsKeyDown(Keys.G))
+            {
+                _scale -= 0.01f;
+            }
+            if (Keyboard.GetState().IsKeyDown(Keys.H))
+            {
+                _scale += 0.01f;
+            }
+
+            _scale = Math.Clamp(_scale, 0.01f, 10f);
+
             if (Keyboard.GetState().IsKeyDown(Keys.N))
             {
                 _fishEye = true;
@@ -143,6 +155,7 @@ namespace RayCasting
 
             if (Keyboard.GetState().IsKeyDown(Keys.Up))
             {
+                _player._movementSpeed = 5f / _scale;
                 var next = _player.Next(gameTime);
                 if (!IsSolid(next.X, next.Y))
                 {
@@ -165,7 +178,7 @@ namespace RayCasting
             for (var i = -MathHelper.ToRadians(_fov / 2); i < MathHelper.ToRadians(_fov / 2); i += (MathHelper.ToRadians(_fov) / GraphicsDevice.Viewport.Width) * _rayResolution) {
                 var position = _player.Position;
                 var rotation = _player.Rotation;
-                RunIteration(position, rotation, i);
+                RunIteration(position, rotation, i, _scale);
             }
             //Console.WriteLine(_iterationResults.Count());
            
@@ -290,14 +303,14 @@ namespace RayCasting
             _debugDraw.Stop();
         }
 
-        private void RunIteration(Vector2 position, float rotation, float diff)
+        private void RunIteration(Vector2 position, float rotation, float diff, float scale)
         {
 
             float rayDirX = (float)Math.Cos(rotation + diff);// + planeX * cameraX;
             float rayDirY = (float)Math.Sin(rotation + diff);// + planeY * cameraX;
 
-            float deltaDistX = (float)Math.Sqrt(1 + (rayDirY * rayDirY) / (rayDirX * rayDirX));
-            float deltaDistY = (float)Math.Sqrt(1 + (rayDirX * rayDirX) / (rayDirY * rayDirY));
+            float deltaDistX = (float)Math.Sqrt(1f + (rayDirY * rayDirY) / (rayDirX * rayDirX)) * scale;
+            float deltaDistY = (float)Math.Sqrt(1f + (rayDirX * rayDirX) / (rayDirY * rayDirY)) * scale;
 
             float sideDistX;
             float sideDistY;
@@ -362,14 +375,8 @@ namespace RayCasting
                 distance++;
             }
 
-            if (side == 0)
-            {
-                length = (sideDistX - deltaDistX);
-            }
-            else
-            {
-                length = (sideDistY - deltaDistY);
-            }
+
+            length = side == 0 ? sideDistX - deltaDistX : sideDistY - deltaDistY;
 
             iterationResult.StepX = stepX;
             iterationResult.StepY = stepY;

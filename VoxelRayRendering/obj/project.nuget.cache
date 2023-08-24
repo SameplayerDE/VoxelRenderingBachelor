@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "MgdMUZhVNQuTEuxtADeMnqHJMO3O+0nuv9HY/F2dNiNbjZloIc3q2MC9S17ivXv91ArPwuk2x4d6iE2BNoap8A==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\asame\\source\\repos\\VoxelRendering\\VoxelRayRendering\\VoxelRayRendering.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\asame\\.nuget\\packages\\monogame.content.builder.task.compute\\3.8.2\\monogame.content.builder.task.compute.3.8.2.nupkg.sha512",
+    "C:\\Users\\asame\\.nuget\\packages\\monogame.framework.compute.desktopgl\\3.8.2\\monogame.framework.compute.desktopgl.3.8.2.nupkg.sha512"
+  ],
+  "logs": []
+}

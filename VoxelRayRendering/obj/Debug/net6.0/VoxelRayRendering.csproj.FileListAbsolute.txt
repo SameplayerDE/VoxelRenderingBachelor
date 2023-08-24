@@ -1,0 +1,5 @@
+C:\Users\asame\source\repos\VoxelRendering\VoxelRayRendering\obj\Debug\net6.0\VoxelRayRendering.csproj.AssemblyReference.cache
+C:\Users\asame\source\repos\VoxelRendering\VoxelRayRendering\obj\Debug\net6.0\VoxelRayRendering.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\asame\source\repos\VoxelRendering\VoxelRayRendering\obj\Debug\net6.0\VoxelRayRendering.AssemblyInfoInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\VoxelRayRendering\obj\Debug\net6.0\VoxelRayRendering.AssemblyInfo.cs
+C:\Users\asame\source\repos\VoxelRendering\VoxelRayRendering\obj\Debug\net6.0\VoxelRayRendering.csproj.CoreCompileInputs.cache

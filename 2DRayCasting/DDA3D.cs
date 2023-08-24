@@ -19,9 +19,12 @@ namespace RayCasting
         private const int _virtualResolutionY = 240;
 
         private RenderTarget2D _rayCastTarget;
-        private const int _rayCastTargetResolutionX = 240;
-        private const int _rayCastTargetResolutionY = 240;
+        private const int _rayCastTargetResolutionX = 1920 / 8;
+        private const int _rayCastTargetResolutionY = 1080 / 8;
 
+        private const int _mapX = 24;
+        private const int _mapY = 4;
+        private const int _mapZ = 24;
         private int[,,] _map;
 
         private Matrix _world;
@@ -36,7 +39,7 @@ namespace RayCasting
         private VertexBuffer _vertexBuffer;
 
         //Player
-        private Vector3 _position = new Vector3(2, 1.5f, 2);
+        private Vector3 _position = new Vector3(1, 1f, 1);
         private Vector3 _rayPosition = new Vector3(2, 1.5f, 2);
         private Vector3 _rotation;
         private Vector3 _rayRotation;
@@ -61,7 +64,8 @@ namespace RayCasting
 
         protected override void Initialize()
         {
-            IsFixedTimeStep = true;
+            IsFixedTimeStep = false;
+            _graphics.SynchronizeWithVerticalRetrace = false;
             TargetElapsedTime = TimeSpan.FromMilliseconds(16);
 
             _graphics.ApplyChanges();
@@ -82,7 +86,7 @@ namespace RayCasting
             _pixel = new Texture2D(GraphicsDevice, 1, 1);
             _pixel.SetData(new Color[] { Color.White });
 
-            _map = new int[4, 24, 24] // y, z, x
+            _map = new int[_mapY, _mapZ, _mapX] // y, z, x
             {
                 {
                     { 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 },
@@ -246,7 +250,7 @@ namespace RayCasting
             vertices[6 * 5 + 4] = new VertexPositionColor(new Vector3(+1, +0, +0), Color.Purple);
             vertices[6 * 5 + 5] = new VertexPositionColor(new Vector3(+0, +0, +0), Color.Purple);
 
-            /*
+            
             //Facing Negativ X
             vertices[6 * 0 + 0] = new VertexPositionColor(new Vector3(+0, +0, +1), Color.White);
             vertices[6 * 0 + 1] = new VertexPositionColor(new Vector3(+0, -1, +1), Color.White);
@@ -299,10 +303,48 @@ namespace RayCasting
 
             vertices[6 * 5 + 3] = new VertexPositionColor(new Vector3(+1, -1, +0), Color.MediumPurple);
             vertices[6 * 5 + 4] = new VertexPositionColor(new Vector3(+1, +0, +0), Color.MediumPurple);
-            vertices[6 * 5 + 5] = new VertexPositionColor(new Vector3(+0, +0, +0), Color.MediumPurple);*/
+            vertices[6 * 5 + 5] = new VertexPositionColor(new Vector3(+0, +0, +0), Color.MediumPurple);
 
             _vertexBuffer = new VertexBuffer(GraphicsDevice, typeof(VertexPositionColor), 6 * 6, BufferUsage.WriteOnly);
             _vertexBuffer.SetData(vertices);
+
+            FastNoiseLite noise = new FastNoiseLite();
+            noise.SetNoiseType(FastNoiseLite.NoiseType.Perlin);
+
+            float scale = 1f;
+
+            for (int y = 0; y < _mapY; y++)
+            {
+                for (int z = 0; z < _mapZ; z++)
+                {
+                    for (int x = 0; x < _mapX; x++)
+                    {
+
+                        //int id = _map[y, z, x];
+                        //float nValue = Math.Max(noise.GetNoise(x * scale, y * scale, z * scale), 0);
+                        ////nValue *= 30;
+                        ////nValue += 10;
+                        ////nValue = Math.Clamp(nValue, 0, _mapY);
+                        ////
+                        //if (nValue > 0f)
+                        //{
+                        //    _map[y, z, x] = (int)1;
+                        //}
+                        //for (int yx = 0; yx < nValue; yx++)
+                        //{
+                        //    int index = x + _mapX * z + _mapX * _mapZ * y;
+                        //    _map1D[index] = (int)nValue;
+                         //   _map[y, z, x] = (int)nValue;
+                        //}
+                       // int index = x + _mapX * z + _mapX * _mapZ * y;
+                       // _map1D[index] = id;
+                        //int index = x + _mapX * z + _mapX * _mapZ * y;
+                        //id = _map[y, z, x];
+                        //id = (int)nValue;
+                        //_map1D[index] = id > 0 ? 1 : 0;
+                    }
+                }
+            }
 
             base.Initialize();
         }
@@ -430,59 +472,74 @@ namespace RayCasting
             float ratio = GraphicsDevice.Viewport.AspectRatio;
 
 
-            if (!keyboard.IsKeyDown(Keys.Q))
+            if (keyboard.IsKeyDown(Keys.Q))
             {
                 _rayPosition = _position;
                 _rayRotation = _rotation;
-
+                Matrix n_rot = 
+                    Matrix.CreateRotationX(_rotation.X) *
+                    Matrix.CreateRotationY(_rotation.Y) *
+                    Matrix.CreateRotationZ(_rotation.Z);
                 _results.Clear();
 
-                for (var r = -MathHelper.ToRadians(_fov / 2); r < MathHelper.ToRadians(_fov / 2); r += (MathHelper.ToRadians(_fov) / _rayCastTargetResolutionY) * _rayResolution)
+                int width = _rayCastTargetResolutionX;
+                int height = _rayCastTargetResolutionY;
+                float aspectRatio = (float)height / width;
+
+                Vector3 cameraDir = Vector3.UnitZ;
+                Vector3 cameraPlaneU = Vector3.Cross(cameraDir, Vector3.UnitY);
+                Vector3 cameraPlaneV = Vector3.Cross(Vector3.Cross(cameraDir, Vector3.UnitY), cameraDir) * aspectRatio;
+
+                for (var y = 0; y < height; y++)
                 {
-                    for (var i = -MathHelper.ToRadians(_fov / 2); i < MathHelper.ToRadians(_fov / 2); i += (MathHelper.ToRadians(_fov) / _rayCastTargetResolutionX) * _rayResolution)
+                    for (var x = 0; x < width; x++)
                     {
-                        _results.Add(DDACalculator.RunIteration3D(IsSolid, GetSolid, _rayPosition.X, _rayPosition.Y, _rayPosition.Z, _rayRotation.X, _rayRotation.Y, _rayRotation.Z, r, i, 0));
+                        Vector2 screenPos = (new Vector2(x, y) / new Vector2(width, height)) * 2f - Vector2.One;
+                       
+                        Vector3 rayDir = cameraDir + screenPos.X * cameraPlaneU + screenPos.Y * cameraPlaneV;
+                        rayDir = Vector3.Transform(rayDir, n_rot);
+                        _results.Add(DDACalculator.RunIteration3D_Soft(IsSolid, GetSolid, _rayPosition, rayDir));
                     }
                 }
 
-                for (float r = 0; r < _rayCastTargetResolutionY; r += _rayResolution)
-                {
-                    for (var i = -MathHelper.ToRadians(_fov / 2); i < MathHelper.ToRadians(_fov / 2); i += (MathHelper.ToRadians(_fov) / _rayCastTargetResolutionX) * _rayResolution)
-                    {
-                        //_results.Add(DDACalculator.RunIteration3D(IsSolid, GetSolid, _rayPosition.X, _rayPosition.Y, _rayPosition.Z, _rayRotation.X, _rayRotation.Y, _rayRotation.Z, 0, i, 0));
-                    }
-                }
-
-
-                for (float r = 0; r < _rayCastTargetResolutionY; r += _rayResolution)
-                {
-                    for (float i = 0; i < _rayCastTargetResolutionX; i += _rayResolution)
-                    {
-                        float center = i - (w / 2);
-                        float xAng = (float)Math.Atan(center / 100f);
-                        //_results.Add(DDACalculator.RunIteration3D(IsSolid, GetSolid, _rayPosition.X, _rayPosition.Y, _rayPosition.Z, _rayRotation.X, _rayRotation.Y, _rayRotation.Z, 0, xAng, 0));
-                    }
-                }
-
-                for (var i = -MathHelper.ToRadians(_fov / 2); i < MathHelper.ToRadians(_fov / 2); i += (MathHelper.ToRadians(_fov) / _rayCastTargetResolutionX) * _rayResolution)
-                {
-                    //_results.Add(DDACalculator.RunIteration3D(IsSolid, GetSolid, _rayPosition.X, _rayPosition.Y, _rayPosition.Z, _rayRotation.X, _rayRotation.Y, _rayRotation.Z, 0, i, 0));
-                }
+                //for (var r = -MathHelper.ToRadians(_fov / 2); r < MathHelper.ToRadians(_fov / 2); r += (MathHelper.ToRadians(_fov) / _rayCastTargetResolutionY) * _rayResolution)
+                //{
+                //    for (var i = -MathHelper.ToRadians(_fov / 2); i < MathHelper.ToRadians(_fov / 2); i += (MathHelper.ToRadians(_fov) / _rayCastTargetResolutionX) * _rayResolution)
+                //    {
+                //        _results.Add(DDACalculator.RunIteration3D(IsSolid, GetSolid, _rayPosition.X, _rayPosition.Y, _rayPosition.Z, _rayRotation.X, _rayRotation.Y, _rayRotation.Z, r, i, 0));
+                //    }
+                //}
+                //
+                //for (float r = 0; r < _rayCastTargetResolutionY; r += _rayResolution)
+                //{
+                //    for (var i = -MathHelper.ToRadians(_fov / 2); i < MathHelper.ToRadians(_fov / 2); i += (MathHelper.ToRadians(_fov) / _rayCastTargetResolutionX) * _rayResolution)
+                //    {
+                //        //_results.Add(DDACalculator.RunIteration3D(IsSolid, GetSolid, _rayPosition.X, _rayPosition.Y, _rayPosition.Z, _rayRotation.X, _rayRotation.Y, _rayRotation.Z, 0, i, 0));
+                //    }
+                //}
+                //
+                //
+                //for (float r = 0; r < _rayCastTargetResolutionY; r += _rayResolution)
+                //{
+                //    for (float i = 0; i < _rayCastTargetResolutionX; i += _rayResolution)
+                //    {
+                //        float center = i - (w / 2);
+                //        float xAng = (float)Math.Atan(center / 100f);
+                //        //_results.Add(DDACalculator.RunIteration3D(IsSolid, GetSolid, _rayPosition.X, _rayPosition.Y, _rayPosition.Z, _rayRotation.X, _rayRotation.Y, _rayRotation.Z, 0, xAng, 0));
+                //    }
+                //}
+                //
+                //for (var i = -MathHelper.ToRadians(_fov / 2); i < MathHelper.ToRadians(_fov / 2); i += (MathHelper.ToRadians(_fov) / _rayCastTargetResolutionX) * _rayResolution)
+                //{
+                //    //_results.Add(DDACalculator.RunIteration3D(IsSolid, GetSolid, _rayPosition.X, _rayPosition.Y, _rayPosition.Z, _rayRotation.X, _rayRotation.Y, _rayRotation.Z, 0, i, 0));
+                //}
 
                 _requestRender = true;
             }
 
             _world = Matrix.Identity;
-            _projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(_fov), 1f, 0.01f, 100f);
+            _projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(_fov), GraphicsDevice.Viewport.AspectRatio, 0.01f, 100f);
             _view = Matrix.CreateLookAt(_position, _position + _direction, new Vector3(0, 1, 0));
-
-            if (!Keyboard.GetState().IsKeyDown(Keys.Space))
-            {
-                _projection = Matrix.CreatePerspectiveFieldOfView(MathHelper.ToRadians(_fov), GraphicsDevice.Viewport.AspectRatio, 0.01f, 100f);
-            }
-
-
-
 
             //ang = ray angle from the look direction, whose ray passes through the central x coordinate of the screen;
             //opp = opposite side(equivalent to the distance of the screen X coordinate through which the ray passes from the screen X coordinate of the central pixel);
@@ -510,23 +567,23 @@ namespace RayCasting
             }*/
 
 
-            if (keyboard.IsKeyDown(Keys.I))
-            {
-                _xxx += 5 * delta;
-            }
-            if (keyboard.IsKeyDown(Keys.U))
-            {
-                _xxx -= 5 * delta;
-            }
-
-            if (keyboard.IsKeyDown(Keys.K))
-            {
-                _fov += 10 * delta;
-            }
-            if (keyboard.IsKeyDown(Keys.J))
-            {
-                _fov -= 10 * delta;
-            }
+            //if (keyboard.IsKeyDown(Keys.I))
+            //{
+            //    _xxx += 5 * delta;
+            //}
+            //if (keyboard.IsKeyDown(Keys.U))
+            //{
+            //    _xxx -= 5 * delta;
+            //}
+            //
+            //if (keyboard.IsKeyDown(Keys.K))
+            //{
+            //    _fov += 10 * delta;
+            //}
+            //if (keyboard.IsKeyDown(Keys.J))
+            //{
+            //    _fov -= 10 * delta;
+            //}
 
             /*for (float x = -fov / 2; x < fov / 2; x += fov / GraphicsDevice.Viewport.Width)
             {
@@ -554,22 +611,112 @@ namespace RayCasting
             {
                 GraphicsDevice.SetRenderTarget(_rayCastTarget);
                 GraphicsDevice.Clear(Color.Black);
-
+                
                 _spriteBatch.Begin(depthStencilState: DepthStencilState.Default, samplerState: SamplerState.PointWrap);
-
+                
                 int ittX = 0;
-                int ittY = 0;
+                int ittY = _rayCastTargetResolutionY - 1;
                 //_results.Reverse();
-
+                
                 foreach (var result in _results)
                 {
-
+                
                     if (result.Hit == 1)
                     {
-                        var alpha = 1 - (result.Length / 25f);
-                        var depth = 1 - (result.Length / 25f);
+                        var alpha = 1 - (result.Length / 8f);
+                        var depth = 1 - (result.Length / 8f);
                         var color = new Color(depth, depth, depth);
+                
+                        //if (result.Side == (int)Side.X)
+                        //{
+                        //    if (result.SideOrientation == (int)SideOrientation.Positiv)
+                        //    {
+                        //        color = Color.Blue;
+                        //    }
+                        //    else
+                        //    {
+                        //        color = Color.White;
+                        //    }
+                        //}
+                        //
+                        //if (result.Side == (int)Side.Y)
+                        //{
+                        //    if (result.SideOrientation == (int)SideOrientation.Positiv)
+                        //    {
+                        //        color = Color.Yellow;
+                        //    }
+                        //    else
+                        //    {
+                        //        color = Color.Red;
+                        //    }
+                        //}
+                        //
+                        //if (result.Side == (int)Side.Z)
+                        //{
+                        //    if (result.SideOrientation == (int)SideOrientation.Positiv)
+                        //    {
+                        //        color = Color.Green;
+                        //    }
+                        //    else
+                        //    {
+                        //        color = Color.Purple;
+                        //    }
+                        //}
+                
+                        //_spriteBatch.Draw(_pixel, new Vector2(ittX, ittY) - new Vector2(ittX, 0) * _rayResolution, null, color, 0f, new Vector2(0.5f, 0.5f), (1f - (result.Length / 25f)) * _rayResolution, SpriteEffects.None, 1f);
+                        _spriteBatch.Draw(_pixel, new Vector2(ittX, ittY), color);
+                    }
+                
+                    ittX++;
+                    if (ittX >= _rayCastTargetResolutionX)
+                    {
+                        ittX = 0;
+                        ittY--;
+                    }
+                }
+                _spriteBatch.End();
+                _requestRender = false;
+            }
 
+            GraphicsDevice.SetRenderTarget(_virtualScreen);
+            GraphicsDevice.Clear(Color.Black);
+            
+            if (Keyboard.GetState().IsKeyDown(Keys.Space))
+            {
+                Stream stream = File.Create("image_" + DateTime.Now.ToString("yyyy-dd-M--HH-mm-ss") + ".png");
+                _rayCastTarget.SaveAsPng(stream, _rayCastTarget.Width, _rayCastTarget.Height);
+                stream.Dispose();
+                _rayCastTarget.Dispose();
+                
+                Exit();
+                for (int y = 0; y < _map.GetLength(0); y++)
+                {
+                    for (int z = 0; z < _map.GetLength(1); z++)
+                    {
+                        for (int x = 0; x < _map.GetLength(2); x++)
+                        {
+                            if (!IsSolid(x, y, z))
+                            {
+                                continue;
+                            }
+                            //DrawCube(x, y + 1, z, 1f);
+                        }
+                    }
+                }
+            }
+            
+            
+            
+            foreach (var result in _results)
+            {
+                if (Keyboard.GetState().IsKeyDown(Keys.E))
+                {
+                    if (result.Hit == 1)
+                    {
+                        //var alpha = 1 - (result.Length / 25f);
+                        //var depth = 1 - (result.Length / 25f);
+                        var color = new Color(255, 255, 255);
+            
                         if (result.Side == (int)Side.X)
                         {
                             if (result.SideOrientation == (int)SideOrientation.Positiv)
@@ -581,7 +728,7 @@ namespace RayCasting
                                 color = Color.White;
                             }
                         }
-
+            
                         if (result.Side == (int)Side.Y)
                         {
                             if (result.SideOrientation == (int)SideOrientation.Positiv)
@@ -593,7 +740,7 @@ namespace RayCasting
                                 color = Color.Red;
                             }
                         }
-
+            
                         if (result.Side == (int)Side.Z)
                         {
                             if (result.SideOrientation == (int)SideOrientation.Positiv)
@@ -605,117 +752,90 @@ namespace RayCasting
                                 color = Color.Purple;
                             }
                         }
-
-                        _spriteBatch.Draw(_pixel, new Vector2(_rayCastTargetResolutionX, ittY * _rayResolution) - new Vector2(ittX, 0) * _rayResolution, null, color, 0f, new Vector2(0.5f, 0.5f), (1f - (result.Length / 25f)) * _rayResolution, SpriteEffects.None, 1f);
-                    }
-                    var step = MathHelper.ToRadians(_fov) / _rayCastTargetResolutionX * _rayResolution;
-                    var range = MathHelper.ToRadians(_fov);
-                    var countX = range / step;
-
-
-                    ittX++;
-                    if (ittX > countX)
-                    {
-                        ittX = 0;
-                        ittY++;
+            
+                        DrawLine(result.From + (_direction * 0.001f), result.To, color);
+            
                     }
                 }
-                _spriteBatch.End();
-                _requestRender = false;
-            }
-            GraphicsDevice.SetRenderTarget(_virtualScreen);
-            GraphicsDevice.Clear(Color.White);
-
-            for (int y = 0; y < _map.GetLength(0); y++)
-            {
-                for (int z = 0; z < _map.GetLength(1); z++)
-                {
-                    for (int x = 0; x < _map.GetLength(2); x++)
-                    {
-                        if (!IsSolid(x, y, z))
-                        {
-                            continue;
-                        }
-                        DrawCube(x, y + 1, z, 1f);
-                    }
-                }
-            }
-
-            foreach (var result in _results)
-            {
-                //DrawLine(result.From - new Vector3(0, 0.01f, 0), result.To);
             }
 
             GraphicsDevice.SetRenderTarget(null);
             GraphicsDevice.Clear(Color.Black);
 
+            //int iteration = 0;
+            //
             _spriteBatch.Begin(depthStencilState: DepthStencilState.Default, samplerState: SamplerState.PointWrap);
-            /*foreach (var result in _results)
-            {
+            //foreach (var result in _results)
+            //{
+            //
+            //    var length = result.Length * Math.Cos(result.Angle.Y);
+            //
+            //    int height = GraphicsDevice.Viewport.Height;
+            //    //Calculate height of line to draw on screen
+            //    int lineHeight = (int)(height / length);
+            //
+            //    //calculate lowest and highest pixel to fill in current stripe
+            //    int drawStart = -lineHeight / 2 + height / 2;
+            //    //if (drawStart < 0) drawStart = 0;
+            //    int drawEnd = lineHeight / 2 + height / 2;
+            //    //if (drawEnd >= height) drawEnd = height - 1;
+            //
+            //    if (result.Hit == 1)
+            //    {
+            //        var alpha = 1 - (result.Length / 25f);
+            //        var depth = 1 - (result.Length / 25f);
+            //
+            //        int screenX = iteration;
+            //        int screenY = drawStart;
+            //
+            //        int sliceWidth = 1;
+            //        int sliceHeight = drawEnd - drawStart;
+            //
+            //        Rectangle sliceScreen = new Rectangle(screenX, screenY, sliceWidth, sliceHeight);
+            //
+            //        int textureID = result.Id - 1;
+            //        Texture2D texture = _textures[textureID];
+            //
+            //        if (result.Side == 2)
+            //        {
+            //            _spriteBatch.Draw(_pixel, sliceScreen, new Rectangle((int)(texture.Width * ((result.To.X) - (int)(result.To.X))), 0, 1, texture.Height), Color.White);
+            //        }
+            //        if (result.Side == 1)
+            //        {
+            //            _spriteBatch.Draw(texture, sliceScreen, new Rectangle((int)(texture.Width * ((result.To.X) - (int)(result.To.X))), 0, 1, texture.Height), Color.White);
+            //        }
+            //        if (result.Side == 0)
+            //        {
+            //            _spriteBatch.Draw(texture, sliceScreen, new Rectangle((int)(texture.Width * ((result.To.Z) - (int)(result.To.Z))), 0, 1, texture.Height), Color.White);
+            //        }
+            //
+            //        _spriteBatch.Draw(_pixel, sliceScreen, new Rectangle((int)(texture.Width * ((result.To.X) - (int)(result.To.X))), 0, 1, texture.Height), new Color(depth, depth, depth));
+            //    }
+            //
+            //    iteration++;
+            //}
+            //
+            //
+            //if (!Keyboard.GetState().IsKeyDown(Keys.Space))
+            //{
+            //    _spriteBatch.Draw(_virtualScreen, GraphicsDevice.Viewport.Bounds, Color.White);
+            //}
+            //else
+            //{
+            //    _spriteBatch.Draw(_virtualScreen, new Rectangle(0, 0, 256, 256), Color.White);
+            //}
+            //_spriteBatch.Draw(_virtualScreen, GraphicsDevice.Viewport.Bounds, Color.White);
+            //
+            //if (Keyboard.GetState().IsKeyDown(Keys.F1))
+            //{
+            //    _spriteBatch.Draw(_rayCastTarget, new Rectangle(0, 0, 256, 256), Color.White);
+            //}
 
-                var length = result.Length * Math.Cos(result.Angle.Y);
-
-                int height = GraphicsDevice.Viewport.Height;
-                //Calculate height of line to draw on screen
-                int lineHeight = (int)(height / length);
-
-                //calculate lowest and highest pixel to fill in current stripe
-                int drawStart = -lineHeight / 2 + height / 2;
-                //if (drawStart < 0) drawStart = 0;
-                int drawEnd = lineHeight / 2 + height / 2;
-                //if (drawEnd >= height) drawEnd = height - 1;
-
-                if (result.Hit == 1)
-                {
-                    var alpha = 1 - (result.Length / 25f);
-                    var depth = 1 - (result.Length / 25f);
-
-                    int screenX = iteration;
-                    int screenY = drawStart;
-
-                    int sliceWidth = 1;
-                    int sliceHeight = drawEnd - drawStart;
-
-                    Rectangle sliceScreen = new Rectangle(screenX, screenY, sliceWidth, sliceHeight);
-
-                    int textureID = result.Id - 1;
-                    Texture2D texture = _textures[textureID];
-
-                    if (result.Side == 2)
-                    {
-                        _spriteBatch.Draw(_pixel, sliceScreen, new Rectangle((int)(texture.Width * ((result.To.X) - (int)(result.To.X))), 0, 1, texture.Height), Color.White);
-                    }
-                    if (result.Side == 1)
-                    {
-                        _spriteBatch.Draw(texture, sliceScreen, new Rectangle((int)(texture.Width * ((result.To.X) - (int)(result.To.X))), 0, 1, texture.Height), Color.White);
-                    }
-                    if (result.Side == 0)
-                    {
-                        _spriteBatch.Draw(texture, sliceScreen, new Rectangle((int)(texture.Width * ((result.To.Z) - (int)(result.To.Z))), 0, 1, texture.Height), Color.White);
-                    }
-
-                    _spriteBatch.Draw(_pixel, sliceScreen, new Rectangle((int)(texture.Width * ((result.To.X) - (int)(result.To.X))), 0, 1, texture.Height), new Color(depth, depth, depth));
-                }
-            
-                iteration++;
-            }*/
-
-            
-            if (!Keyboard.GetState().IsKeyDown(Keys.Space))
-            {
-                _spriteBatch.Draw(_virtualScreen, GraphicsDevice.Viewport.Bounds, Color.White);
-            }
-            else
-            {
-                _spriteBatch.Draw(_virtualScreen, new Rectangle(0, 0, 256, 256), Color.White);
-            }
-
-            _spriteBatch.Draw(_rayCastTarget, new Vector2(0, 0), Color.White);
-
-
-            _spriteBatch.DrawString(_font, _fov + "", Vector2.Zero, Color.White);
-            _spriteBatch.DrawString(_font, _xxx + "", new Vector2(0, _font.LineSpacing), Color.White);
-            _spriteBatch.DrawString(_font, GraphicsDevice.Viewport.AspectRatio + "", new Vector2(0, _font.LineSpacing * 2), Color.White);
+            _spriteBatch.Draw(_rayCastTarget, GraphicsDevice.Viewport.Bounds, Color.White);
+            //_spriteBatch.Draw(_virtualScreen, new Rectangle(0, 0, 256, 256), Color.White);
+            //_spriteBatch.DrawString(_font, _fov + "", Vector2.Zero, Color.White);
+            //_spriteBatch.DrawString(_font, _xxx + "", new Vector2(0, _font.LineSpacing), Color.White);
+            //_spriteBatch.DrawString(_font, GraphicsDevice.Viewport.AspectRatio + "", new Vector2(0, _font.LineSpacing * 2), Color.White);
 
             _spriteBatch.End();
 
@@ -834,6 +954,21 @@ namespace RayCasting
                 {
                     new VertexPositionColor(from, Color.CornflowerBlue),
                     new VertexPositionColor(to, Color.Black)
+                }, 0, 1);
+            }
+        }
+
+        private void DrawLine(Vector3 from, Vector3 to, Color color)
+        {
+            _world = Matrix.Identity;
+            _effect.Parameters["WorldViewProjection"].SetValue(_world * _view * _projection);
+            foreach (EffectPass pass in _effect.CurrentTechnique.Passes)
+            {
+                pass.Apply();
+                GraphicsDevice.DrawUserPrimitives(PrimitiveType.LineList, new VertexPositionColor[]
+                {
+                    new VertexPositionColor(from, color),
+                    new VertexPositionColor(to, color)
                 }, 0, 1);
             }
         }

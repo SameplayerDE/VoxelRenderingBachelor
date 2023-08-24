@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<SourceFileCollection xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <Profile>HiDef</Profile>
+  <Platform>Windows</Platform>
+  <Config />
+  <SourceFiles>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/ass.png</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/glass.png</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/cobblestone.png</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/dirt.png</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/Effect2.fx</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/File.fx</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/Filedawda.fx</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/Font.spritefont</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/gold_block.png</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/iron_block.png</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/label__2.png</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/oak_log.png</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/oak_log_top.png</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/oak_planks.png</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/Texture.png</File>
+    <File>C:/Users/asame/source/repos/VoxelRendering/2DRayCasting/Content/vpc.fx</File>
+  </SourceFiles>
+  <DestFiles>
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+    <File xsi:nil="true" />
+  </DestFiles>
+</SourceFileCollection>

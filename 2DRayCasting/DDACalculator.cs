@@ -37,6 +37,7 @@ namespace RayCasting
         public Vector3 To;
         public Vector3 Rotation;
         public Vector3 Angle;
+        public Vector3 MapPosition;
     }
 
     public static class DDACalculator
@@ -368,6 +369,7 @@ namespace RayCasting
             
 
             result.From = new Vector3(posX, posY, posZ);
+            result.MapPosition = new Vector3(mapX, mapY, mapZ);
             result.To = result.From + rayDir * rayLength;
             result.Length = rayLength;
             result.Hit = hit;
@@ -377,6 +379,98 @@ namespace RayCasting
             result.Rotation = new Vector3(rx, ry, rz);
             result.Angle = new Vector3(ax, ay, az);
             result.Id = result.Hit == 1 ? type(mapX, mapY, mapZ) : 0;
+
+            return result;
+        }
+
+        public static RayResult3D RunIteration3D_Soft(Func<float, float, float, bool> solid, Func<float, float, float, int> type, Vector3 origin, Vector3 rayDir)
+        {
+            Vector3 worldPos = origin;
+            Vector3 mapPos = Vector3.Floor(worldPos);
+
+            Vector3 deltaDist = new Vector3(rayDir.Length()) / rayDir;
+            deltaDist = new Vector3(Math.Abs(deltaDist.X), Math.Abs(deltaDist.Y), Math.Abs(deltaDist.Z));
+
+            Vector3 raySign = new Vector3(Math.Sign(rayDir.X), Math.Sign(rayDir.Y), Math.Sign(rayDir.Z));
+            Vector3 sideDist = (raySign * (mapPos - worldPos) + (raySign * 0.5f) + new Vector3(0.5f)) * deltaDist;
+
+            float distance = 0f;
+            float maxDistance = 16f;
+            int hit = 0;
+            Side side = 0;
+            SideOrientation orientation = 0;
+            float rayLength = 0.0f;
+
+            RayResult3D result = new RayResult3D();
+
+            while (hit == 0 && distance < maxDistance)
+            {
+                if (sideDist.X < sideDist.Z)
+                {
+                    if (sideDist.X < sideDist.Y)
+                    {
+                        sideDist.X += deltaDist.X;
+                        mapPos.X += raySign.X;
+                        side = Side.X;
+                        orientation = raySign.X < 0 ? SideOrientation.Positiv : SideOrientation.Negativ;
+                    }
+                    else
+                    {
+                        sideDist.Y += deltaDist.Y;
+                        mapPos.Y += raySign.Y;
+                        side = Side.Y;
+                        orientation = raySign.Y < 0 ? SideOrientation.Positiv : SideOrientation.Negativ;
+                    }
+                }
+                else
+                {
+                    if (sideDist.Z < sideDist.Y)
+                    {
+                        sideDist.Z += deltaDist.Z;
+                        mapPos.Z += raySign.Z;
+                        side = Side.Z;
+                        orientation = raySign.Z < 0 ? SideOrientation.Positiv : SideOrientation.Negativ;
+                    }
+                    else
+                    {
+                        sideDist.Y += deltaDist.Y;
+                        mapPos.Y += raySign.Y;
+                        side = Side.Y;
+                        orientation = raySign.Y < 0 ? SideOrientation.Positiv : SideOrientation.Negativ;
+                    }
+                }
+
+                distance++;
+
+                if (solid(mapPos.X, mapPos.Y, mapPos.Z))
+                {
+                    hit = 1;
+                }
+            }
+
+            if (side == Side.X)
+            {
+                rayLength = sideDist.X - deltaDist.X;
+            }
+            else if (side == Side.Y)
+            {
+                rayLength = sideDist.Y - deltaDist.Y;
+            }
+            else if (side == Side.Z)
+            {
+                rayLength = sideDist.Z - deltaDist.Z;
+            }
+
+
+            result.From = worldPos;
+            result.MapPosition = mapPos;
+            result.To = result.From + rayDir * rayLength;
+            result.Length = rayLength;
+            result.Hit = hit;
+            result.Side = (int)side;
+            result.SideOrientation = (int)orientation;
+            result.Direction = rayDir;
+            result.Id = result.Hit == 1 ? type(mapPos.X, mapPos.Y, mapPos.Z) : 0;
 
             return result;
         }

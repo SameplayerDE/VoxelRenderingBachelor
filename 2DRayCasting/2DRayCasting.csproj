@@ -14,7 +14,7 @@
 
   <ItemGroup>
     <PackageReference Include="MonoGame.Content.Builder.Task.Compute" Version="3.8.2" />
-    <PackageReference Include="MonoGame.Framework.Compute.WindowsDX" Version="3.8.2" />
+    <PackageReference Include="MonoGame.Framework.Compute.DesktopGL" Version="3.8.2" />
   </ItemGroup>
 
 </Project>

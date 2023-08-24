@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "IAbvznDOK41gyEtN7JnzfdXi1+rUPpN3suGNRJdXAeXeX1LDUGn5gkDV1mCnfgvLsspfRWr1Evznu3uvZ15DNw==",
+  "success": true,
+  "projectFilePath": "C:\\Users\\asame\\source\\repos\\VoxelRendering\\QuadTreeDDA\\QuadTreeDDA.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\asame\\.nuget\\packages\\monogame.content.builder.task.compute\\3.8.2\\monogame.content.builder.task.compute.3.8.2.nupkg.sha512",
+    "C:\\Users\\asame\\.nuget\\packages\\monogame.framework.compute.desktopgl\\3.8.2\\monogame.framework.compute.desktopgl.3.8.2.nupkg.sha512"
+  ],
+  "logs": []
+}

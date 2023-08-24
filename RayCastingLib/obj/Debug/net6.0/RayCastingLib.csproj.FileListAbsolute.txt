@@ -1,0 +1,12 @@
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\bin\Debug\net6.0\RayCastingLib.deps.json
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\bin\Debug\net6.0\RayCastingLib.dll
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\bin\Debug\net6.0\RayCastingLib.pdb
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\obj\Debug\net6.0\RayCastingLib.csproj.AssemblyReference.cache
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\obj\Debug\net6.0\RayCastingLib.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\obj\Debug\net6.0\RayCastingLib.AssemblyInfoInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\obj\Debug\net6.0\RayCastingLib.AssemblyInfo.cs
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\obj\Debug\net6.0\RayCastingLib.csproj.CoreCompileInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\obj\Debug\net6.0\RayCastingLib.dll
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\obj\Debug\net6.0\refint\RayCastingLib.dll
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\obj\Debug\net6.0\RayCastingLib.pdb
+C:\Users\asame\source\repos\VoxelRendering\RayCastingLib\obj\Debug\net6.0\ref\RayCastingLib.dll

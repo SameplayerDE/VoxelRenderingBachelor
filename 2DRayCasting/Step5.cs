@@ -159,6 +159,7 @@ namespace RayCasting
                 var rotation = _player.Rotation;
                 RunIteration(position, rotation, i);
             }
+
             Console.WriteLine(_iterationResults.Count());
 
             base.Update(gameTime);

@@ -1,0 +1,12 @@
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\bin\Debug\net6.0\OptiLib.deps.json
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\bin\Debug\net6.0\OptiLib.dll
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\bin\Debug\net6.0\OptiLib.pdb
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\obj\Debug\net6.0\OptiLib.csproj.AssemblyReference.cache
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\obj\Debug\net6.0\OptiLib.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\obj\Debug\net6.0\OptiLib.AssemblyInfoInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\obj\Debug\net6.0\OptiLib.AssemblyInfo.cs
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\obj\Debug\net6.0\OptiLib.csproj.CoreCompileInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\obj\Debug\net6.0\OptiLib.dll
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\obj\Debug\net6.0\refint\OptiLib.dll
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\obj\Debug\net6.0\OptiLib.pdb
+C:\Users\asame\source\repos\VoxelRendering\OptiLib\obj\Debug\net6.0\ref\OptiLib.dll

@@ -1,0 +1,5 @@
+C:\Users\asame\source\repos\VoxelRendering\RayCasting_Plain\obj\Debug\net6.0\RayCasting_Plain.csproj.AssemblyReference.cache
+C:\Users\asame\source\repos\VoxelRendering\RayCasting_Plain\obj\Debug\net6.0\RayCasting_Plain.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\asame\source\repos\VoxelRendering\RayCasting_Plain\obj\Debug\net6.0\RayCasting_Plain.AssemblyInfoInputs.cache
+C:\Users\asame\source\repos\VoxelRendering\RayCasting_Plain\obj\Debug\net6.0\RayCasting_Plain.AssemblyInfo.cs
+C:\Users\asame\source\repos\VoxelRendering\RayCasting_Plain\obj\Debug\net6.0\RayCasting_Plain.csproj.CoreCompileInputs.cache
